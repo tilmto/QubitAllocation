@@ -8,12 +8,12 @@
 
 using namespace std;
 
-///////////////  Beginning of Hardware Description  ///////////////////
+///////////////  Beginning of Original Hardware Description  ///////////////////
 
 class Hardware
 {
-private:
-    int phyQubitNum;
+protected:
+    int qubitNum;
 
     int edgeNum;
 
@@ -23,11 +23,13 @@ private:
 
     vector<vector<int>> distMatrix;
 
-public:
     vector<vector<int>> routeMatrix;
 
     vector<int> outdeg;
 
+    vector<int> mapArray;
+
+public:
     Hardware(string hwname,bool isUniDirection);
 
     int GetQNum();
@@ -45,6 +47,13 @@ public:
     void PrintRouteMatrix();
 
     void PrintPath(int i,int j);
+
+    void PrintMap();
+
+    void InitMap(vector<vector<int>> seq);
+
+    int Alloc(vector<vector<int>> seq);
+
 };
 
 
@@ -61,30 +70,32 @@ Hardware::Hardware(string hwname,bool isUniDirection=false)
         exit(1);
     }
 
-    phyQubitNum=0;
+    qubitNum=0;
     edgeNum=0;
 
     while(!is.eof())
     {
         is>>adjIndex;
         if(adjIndex == -1)
-            phyQubitNum++;
+            qubitNum++;
     }
-    phyQubitNum--;
+    qubitNum--;
 
-    for(i=0; i<phyQubitNum; i++)
+    for(i=0; i<qubitNum; i++)
     {
-        archMatrix.push_back(vector<bool>(phyQubitNum,false));
-        distMatrix.push_back(vector<int>(phyQubitNum));
-        routeMatrix.push_back(vector<int>(phyQubitNum));
+        archMatrix.push_back(vector<bool>(qubitNum,false));
+        distMatrix.push_back(vector<int>(qubitNum));
+        routeMatrix.push_back(vector<int>(qubitNum));
         outdeg.push_back(0);
     }
+
+    mapArray.resize(qubitNum);
 
     i=0;
     is.clear();
     is.seekg(0,ios::beg);
 
-    while(i<phyQubitNum && !is.eof())
+    while(i<qubitNum && !is.eof())
     {
         is>>adjIndex;
         if(adjIndex==-1)
@@ -111,15 +122,15 @@ Hardware::Hardware(string hwname,bool isUniDirection=false)
 
     Floyd();
 
-    cout << "Physical qubits number: " << phyQubitNum << endl;
+    cout << "Physical qubits number: " << qubitNum << endl;
     cout << "Edge number: " << edgeNum << endl;
 }
 
 
 void Hardware::VerifyArchMatrix()
 {
-    for(int i=0; i<phyQubitNum; i++)
-        for(int j=i; j<phyQubitNum; j++)
+    for(int i=0; i<qubitNum; i++)
+        for(int j=i; j<qubitNum; j++)
             if(archMatrix[i][j]!=archMatrix[j][i])
             {
                 cout << "Wrong Hardware Architecture." << endl;
@@ -131,11 +142,11 @@ void Hardware::VerifyArchMatrix()
 void Hardware::PrintArchMatrix()
 {
     cout << "Architecture Matrix:" << endl;
-    for(int i=0; i<phyQubitNum; i++)
-        for(int j=0; j<phyQubitNum; j++)
+    for(int i=0; i<qubitNum; i++)
+        for(int j=0; j<qubitNum; j++)
         {
             cout << archMatrix[i][j] << " ";
-            if(j==phyQubitNum-1)
+            if(j==qubitNum-1)
                 cout << endl;
         }
 }
@@ -144,8 +155,8 @@ void Hardware::PrintArchMatrix()
 void Hardware::Floyd()
 {
     int i,j,k;
-    for(i=0; i<phyQubitNum; i++)
-        for(j=0; j<phyQubitNum; j++)
+    for(i=0; i<qubitNum; i++)
+        for(j=0; j<qubitNum; j++)
         {
             if(!archMatrix[i][j])
             {
@@ -160,9 +171,9 @@ void Hardware::Floyd()
             }
         }
 
-    for(k=0; k<phyQubitNum; k++)
-        for(i=0; i<phyQubitNum; i++)
-            for(j=0; j<phyQubitNum; j++)
+    for(k=0; k<qubitNum; k++)
+        for(i=0; i<qubitNum; i++)
+            for(j=0; j<qubitNum; j++)
                 if(distMatrix[i][j]>distMatrix[i][k]+distMatrix[k][j])
                 {
                     distMatrix[i][j]=distMatrix[i][k]+distMatrix[k][j];
@@ -178,8 +189,8 @@ void Hardware::Floyd()
 
 void Hardware::VerifyRouteMatrix()
 {
-    for(int i=0; i<phyQubitNum; i++)
-        for(int j=0; j<phyQubitNum; j++)
+    for(int i=0; i<qubitNum; i++)
+        for(int j=0; j<qubitNum; j++)
             if(routeMatrix[i][j]==-1)
             {
                 cout << "Not fully connected architecture." << endl;
@@ -191,11 +202,11 @@ void Hardware::VerifyRouteMatrix()
 void Hardware::PrintRouteMatrix()
 {
     cout << "Route Matrix:" << endl;
-    for(int i=0; i<phyQubitNum; i++)
-        for(int j=0; j<phyQubitNum; j++)
+    for(int i=0; i<qubitNum; i++)
+        for(int j=0; j<qubitNum; j++)
         {
             cout << routeMatrix[i][j] << " ";
-            if(j==phyQubitNum-1)
+            if(j==qubitNum-1)
                 cout << endl;
         }
 }
@@ -220,7 +231,7 @@ void Hardware::PrintPath(int i,int j)
 
 int Hardware::GetQNum()
 {
-    return phyQubitNum;
+    return qubitNum;
 }
 
 
@@ -229,39 +240,282 @@ int Hardware::GetENum()
     return edgeNum;
 }
 
-///////////////  Ending of Hardware Description  ///////////////////
+
+void Hardware::InitMap(vector<vector<int>> seq)
+{
+    int i;
+    unsigned int j;
+    vector<int> freq(qubitNum,0);
+    vector<int> sortFreq(1,0);
+    vector<int> sortOutDeg(1,0);
+
+    for(j=0; j<seq.size(); j++)
+        freq[seq[j][0]]++;
+
+    for(i=1; i<qubitNum; i++)
+        for(j=0; j<sortFreq.size(); j++)
+        {
+            if(freq[i]>freq[sortFreq[j]])
+            {
+                sortFreq.insert(sortFreq.begin()+j,i);
+                break;
+            }
+
+            if(j==sortFreq.size()-1)
+            {
+                sortFreq.push_back(i);
+                break;
+            }
+        }
+
+    for(i=1; i<qubitNum; i++)
+        for(j=0; j<sortOutDeg.size(); j++)
+        {
+            if(outdeg[i]>outdeg[sortOutDeg[j]])
+            {
+                sortOutDeg.insert(sortOutDeg.begin()+j,i);
+                break;
+            }
+
+            if(j==sortOutDeg.size()-1)
+            {
+                sortOutDeg.push_back(i);
+                break;
+            }
+        }
+
+    for(i=0; i<qubitNum; i++)
+        mapArray[sortOutDeg[i]]=sortFreq[i];
+
+    cout << "Initial Mapping:" << endl;
+    PrintMap();
+}
+
+
+void Hardware::PrintMap()
+{
+    int i;
+    cout << "Physical qubits: ";
+    for(i=0; i<qubitNum; i++)
+        cout << i << " ";
+    cout << endl;
+    cout << "Pseudo   qubits: ";
+    for(i=0; i<qubitNum; i++)
+        cout << mapArray[i] << " ";
+    cout << endl;
+}
+
+
+int Hardware::Alloc(vector<vector<int>> seq)
+{
+    unsigned int i;
+    int j,temp,current,next,dest,cost=0;
+
+    for(i=0; i<seq.size(); i++)
+    {
+        for(j=0; j<qubitNum; j++)
+        {
+            if(mapArray[j]==seq[i][1])
+                current=j;
+
+            if(mapArray[j]==seq[i][0])
+                dest=j;
+        }
+
+        next=routeMatrix[current][dest];
+
+        while(next!=dest)
+        {
+            temp=mapArray[current];
+            mapArray[current]=mapArray[next];
+            mapArray[next]=temp;
+            cost=cost+7;
+            current=next;
+            next=routeMatrix[current][dest];
+        }
+
+        cost++;
+
+        cout << "After the " << i+1 << "th operation:" << endl;
+        PrintMap();
+        cout << endl;
+    }
+
+    return cost;
+}
+
+///////////////  Ending of Original Hardware Description  ///////////////////
+
+
+///////////////  Beginning of New Hardware Description  /////////////////////
+
+class HardwareNew:public Hardware
+{
+protected:
+    vector<int> fixedQubit;
+
+public:
+    HardwareNew(string hwname,bool isUniDirection);
+
+    void InitMap(vector<vector<int>> seq);
+
+    int Alloc(vector<vector<int>> seq);
+};
+
+HardwareNew::HardwareNew(string hwname,bool isUniDirection=false):Hardware(hwname,isUniDirection){}
+
+void HardwareNew::InitMap(vector<vector<int>> seq)
+{
+    int i;
+    unsigned int j;
+    vector<int> freq(qubitNum,0);
+    vector<int> sortFreq(1,0);
+    vector<int> sortOutDeg(1,0);
+
+    for(j=0; j<seq.size(); j++)
+    {
+        freq[seq[j][0]]++;
+        freq[seq[j][1]]++;
+    }
+
+    for(i=1; i<qubitNum; i++)
+        for(j=0; j<sortFreq.size(); j++)
+        {
+            if(freq[i]>freq[sortFreq[j]])
+            {
+                sortFreq.insert(sortFreq.begin()+j,i);
+                break;
+            }
+
+            if(j==sortFreq.size()-1)
+            {
+                sortFreq.push_back(i);
+                break;
+            }
+        }
+
+    for(i=1; i<qubitNum; i++)
+        for(j=0; j<sortOutDeg.size(); j++)
+        {
+            if(outdeg[i]>outdeg[sortOutDeg[j]])
+            {
+                sortOutDeg.insert(sortOutDeg.begin()+j,i);
+                break;
+            }
+
+            if(j==sortOutDeg.size()-1)
+            {
+                sortOutDeg.push_back(i);
+                break;
+            }
+        }
+
+    for(i=0; i<qubitNum; i++)
+        mapArray[sortOutDeg[i]]=sortFreq[i];
+
+    fixedQubit.push_back(6);
+    fixedQubit.push_back(8);
+
+    cout << "Initial Mapping:" << endl;
+    PrintMap();
+}
+
+
+int HardwareNew::Alloc(vector<vector<int>> seq)
+{
+    unsigned int i;
+    int j,temp,current,next,dest,cost=0;
+
+    for(i=0; i<seq.size(); i++)
+    {
+        for(j=0; j<qubitNum; j++)
+        {
+            if(mapArray[j]==seq[i][1])
+                current=j;
+
+            if(mapArray[j]==seq[i][0])
+                dest=j;
+        }
+
+        if(outdeg[current]>outdeg[dest])
+        {
+            temp=current;
+            current=dest;
+            dest=temp;
+        }
+
+        next=routeMatrix[current][dest];
+
+        if(next==dest)
+            cost++;
+        else
+        {
+            while(routeMatrix[next][dest]!=dest)
+            {
+                if(next!=6 && next!=8)
+                {
+                    temp=mapArray[current];
+                    mapArray[current]=mapArray[next];
+                    mapArray[next]=temp;
+                    cost=cost+7;
+                    current=next;
+                    next=routeMatrix[current][dest];
+                }
+
+                else
+                {
+                    for(j=0; j<qubitNum; j++)
+                        if(routeMatrix[current][j]==j && routeMatrix[j][dest]!=current && j!=6 && j!=8)
+                        {
+                            next=j;
+                            break;
+                        }
+                }
+            }
+
+            cost=cost+4;
+        }
+
+        cout << "After the " << i+1 << "th operation:" << endl;
+        PrintMap();
+        cout << endl;
+    }
+
+    return cost;
+}
+
+
+///////////////  Ending of New Hardware Description  ///////////////////////
 
 
 void SeqGenerate(vector<vector<int>> &seq,int qubitNum,int seqLen);
 
 void PrintSeq(vector<vector<int>> seq);
 
-void PrintMap(vector<int> mapArray);
-
-void InitMap(vector<int> &mapArray,Hardware hdware,vector<vector<int>> seq);
-
-int AllocBySwap(vector<int> &mapArray,Hardware hdware,vector<vector<int>> seq);
-
-///////////////  Main Function  ///////////////////
 
 int main()
 {
-    int cost;
-    Hardware hdware("ibmqx4");
-    vector<int> mapArray(hdware.GetQNum());
+    int costOld,costNew;
+    Hardware archOld("ibmqx4");
+    HardwareNew archNew("ibmqx4");
+
     vector<vector<int>> seq;
-
-    SeqGenerate(seq,hdware.GetQNum(),100);
+    SeqGenerate(seq,archOld.GetQNum(),500);
     PrintSeq(seq);
-    InitMap(mapArray,hdware,seq);
-    cost=AllocBySwap(mapArray,hdware,seq);
 
-    cout << "The total cost is: " << cost << endl;
+    archOld.InitMap(seq);
+    costOld=archOld.Alloc(seq);
+
+    archNew.InitMap(seq);
+    costNew=archNew.Alloc(seq);
+
+    cout << "The total cost of old hardware is: " << costOld << endl;
+    cout << "The total cost of new hardware is:" << costNew << endl;
+    cout << "new cost/old cost = " << (double)costNew/costOld << endl;
 
     return 0;
 }
 
-///////////////  Main Function  ///////////////////
 
 void SeqGenerate(vector<vector<int>> &seq,int qubitNum,int seqLen)
 {
@@ -291,121 +545,6 @@ void PrintSeq(vector<vector<int>> seq)
     for(unsigned int i=0; i<seq.size(); i++)
         cout << "( " << seq[i][0] << " , " << seq[i][1] << " )" <<endl;
 }
-
-
-void InitMap(vector<int> &mapArray,Hardware hdware,vector<vector<int>> seq)
-{
-    int i;
-    unsigned int j;
-    int qubitNum=hdware.GetQNum();
-    vector<int> freq(qubitNum,0);
-    vector<int> sortFreq(1,0);
-    vector<int> sortOutDeg(1,0);
-
-    for(j=0; j<seq.size(); j++)
-        freq[seq[j][0]]++;
-
-    for(i=1; i<qubitNum; i++)
-        for(j=0; j<sortFreq.size(); j++)
-        {
-            if(freq[i]>freq[sortFreq[j]])
-            {
-                sortFreq.insert(sortFreq.begin()+j,i);
-                break;
-            }
-
-            if(j==sortFreq.size()-1)
-            {
-                sortFreq.push_back(i);
-                break;
-            }
-        }
-
-    for(i=1; i<qubitNum; i++)
-        for(j=0; j<sortOutDeg.size(); j++)
-        {
-            if(hdware.outdeg[i]>hdware.outdeg[sortOutDeg[j]])
-            {
-                sortOutDeg.insert(sortOutDeg.begin()+j,i);
-                break;
-            }
-
-            if(j==sortOutDeg.size()-1)
-            {
-                sortOutDeg.push_back(i);
-                break;
-            }
-        }
-
-    for(i=0; i<qubitNum; i++)
-        mapArray[sortOutDeg[i]]=sortFreq[i];
-
-    cout << "Initial Mapping:" << endl;
-    PrintMap(mapArray);
-}
-
-
-void PrintMap(vector<int> mapArray)
-{
-    unsigned int i;
-    cout << "Physical qubits: ";
-    for(i=0; i<mapArray.size(); i++)
-        cout << i << " ";
-    cout << endl;
-    cout << "Pseudo   qubits: ";
-    for(i=0; i<mapArray.size(); i++)
-        cout << mapArray[i] << " ";
-    cout << endl;
-}
-
-
-int AllocBySwap(vector<int> &mapArray,Hardware hdware,vector<vector<int>> seq)
-{
-    unsigned int i;
-    int j,temp,current,next,dest,cost=0;
-    int qubitNum=hdware.GetQNum();
-
-    for(i=0; i<seq.size(); i++)
-    {
-        for(j=0; j<qubitNum; j++)
-        {
-            if(mapArray[j]==seq[i][1])
-                current=j;
-
-            if(mapArray[j]==seq[i][0])
-                dest=j;
-        }
-
-        next=hdware.routeMatrix[current][dest];
-
-        while(next!=dest)
-        {
-            temp=mapArray[current];
-            mapArray[current]=mapArray[next];
-            mapArray[next]=temp;
-            cost=cost+7;
-            current=next;
-            next=hdware.routeMatrix[current][dest];
-        }
-
-        cost++;
-
-        cout << "After the " << i << "th operation:" << endl;
-        PrintMap(mapArray);
-        cout << endl;
-    }
-
-    return cost;
-}
-
-
-
-
-
-
-
-
-
 
 
 
