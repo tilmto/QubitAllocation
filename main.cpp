@@ -8,9 +8,9 @@
 
 using namespace std;
 
-///////////////  Beginning of Original Hardware Description  ///////////////////
+///////////////  Beginning: Original Hardware Based on Swap  ///////////////////
 
-class Hardware
+class HardwareA
 {
 protected:
     int qubitNum;
@@ -30,7 +30,7 @@ protected:
     vector<int> mapArray;
 
 public:
-    Hardware(string hwname,bool isUniDirection);
+    HardwareA(string hwname,bool isUniDirection);
 
     int GetQNum();
 
@@ -57,7 +57,7 @@ public:
 };
 
 
-Hardware::Hardware(string hwname,bool isUniDirection=false)
+HardwareA::HardwareA(string hwname,bool isUniDirection=false)
 {
     int adjIndex,i;
 
@@ -127,7 +127,7 @@ Hardware::Hardware(string hwname,bool isUniDirection=false)
 }
 
 
-void Hardware::VerifyArchMatrix()
+void HardwareA::VerifyArchMatrix()
 {
     for(int i=0; i<qubitNum; i++)
         for(int j=i; j<qubitNum; j++)
@@ -139,7 +139,7 @@ void Hardware::VerifyArchMatrix()
 }
 
 
-void Hardware::PrintArchMatrix()
+void HardwareA::PrintArchMatrix()
 {
     cout << "Architecture Matrix:" << endl;
     for(int i=0; i<qubitNum; i++)
@@ -152,7 +152,7 @@ void Hardware::PrintArchMatrix()
 }
 
 
-void Hardware::Floyd()
+void HardwareA::Floyd()
 {
     int i,j,k;
     for(i=0; i<qubitNum; i++)
@@ -187,7 +187,7 @@ void Hardware::Floyd()
 
 
 
-void Hardware::VerifyRouteMatrix()
+void HardwareA::VerifyRouteMatrix()
 {
     for(int i=0; i<qubitNum; i++)
         for(int j=0; j<qubitNum; j++)
@@ -199,7 +199,7 @@ void Hardware::VerifyRouteMatrix()
 }
 
 
-void Hardware::PrintRouteMatrix()
+void HardwareA::PrintRouteMatrix()
 {
     cout << "Route Matrix:" << endl;
     for(int i=0; i<qubitNum; i++)
@@ -212,7 +212,7 @@ void Hardware::PrintRouteMatrix()
 }
 
 
-void Hardware::PrintPath(int i,int j)
+void HardwareA::PrintPath(int i,int j)
 {
     int next=routeMatrix[i][j];
     if(next==-1)
@@ -229,19 +229,19 @@ void Hardware::PrintPath(int i,int j)
     }
 }
 
-int Hardware::GetQNum()
+int HardwareA::GetQNum()
 {
     return qubitNum;
 }
 
 
-int Hardware::GetENum()
+int HardwareA::GetENum()
 {
     return edgeNum;
 }
 
 
-void Hardware::InitMap(vector<vector<int>> seq)
+void HardwareA::InitMap(vector<vector<int>> seq)
 {
     int i;
     unsigned int j;
@@ -292,7 +292,7 @@ void Hardware::InitMap(vector<vector<int>> seq)
 }
 
 
-void Hardware::PrintMap()
+void HardwareA::PrintMap()
 {
     int i;
     cout << "Physical qubits: ";
@@ -306,7 +306,7 @@ void Hardware::PrintMap()
 }
 
 
-int Hardware::Alloc(vector<vector<int>> seq)
+int HardwareA::Alloc(vector<vector<int>> seq)
 {
     unsigned int i;
     int j,temp,current,next,dest,cost=0;
@@ -344,27 +344,24 @@ int Hardware::Alloc(vector<vector<int>> seq)
     return cost;
 }
 
-///////////////  Ending of Original Hardware Description  ///////////////////
+///////////////  Ending: Original Hardware Based on Swap  ///////////////////
 
 
-///////////////  Beginning of New Hardware Description  /////////////////////
+////////////////////  Beginning: Hardware with bridge  //////////////////////
 
-class HardwareNew:public Hardware
+class HardwareB:public HardwareA
 {
-protected:
-    vector<int> fixedQubit;
-
 public:
-    HardwareNew(string hwname,bool isUniDirection);
+    HardwareB(string hwname,bool isUniDirection);
 
     void InitMap(vector<vector<int>> seq);
 
     int Alloc(vector<vector<int>> seq);
 };
 
-HardwareNew::HardwareNew(string hwname,bool isUniDirection=false):Hardware(hwname,isUniDirection){}
+HardwareB::HardwareB(string hwname,bool isUniDirection=false):HardwareA(hwname,isUniDirection){}
 
-void HardwareNew::InitMap(vector<vector<int>> seq)
+void HardwareB::InitMap(vector<vector<int>> seq)
 {
     int i;
     unsigned int j;
@@ -413,15 +410,85 @@ void HardwareNew::InitMap(vector<vector<int>> seq)
     for(i=0; i<qubitNum; i++)
         mapArray[sortOutDeg[i]]=sortFreq[i];
 
-    fixedQubit.push_back(6);
-    fixedQubit.push_back(8);
-
     cout << "Initial Mapping:" << endl;
     PrintMap();
 }
 
 
-int HardwareNew::Alloc(vector<vector<int>> seq)
+int HardwareB::Alloc(vector<vector<int>> seq)
+{
+    unsigned int i;
+    int j,temp,current,next,dest,cost=0;
+
+    for(i=0; i<seq.size(); i++)
+    {
+        for(j=0; j<qubitNum; j++)
+        {
+            if(mapArray[j]==seq[i][1])
+                current=j;
+
+            if(mapArray[j]==seq[i][0])
+                dest=j;
+        }
+
+        if(outdeg[current]>outdeg[dest])
+        {
+            temp=current;
+            current=dest;
+            dest=temp;
+        }
+
+        next=routeMatrix[current][dest];
+
+        if(next==dest)
+            cost++;
+        else
+        {
+            while(routeMatrix[next][dest]!=dest)
+            {
+                temp=mapArray[current];
+                mapArray[current]=mapArray[next];
+                mapArray[next]=temp;
+                cost=cost+7;
+                current=next;
+                next=routeMatrix[current][dest];
+            }
+
+            cost=cost+4;
+        }
+
+        cout << "After the " << i+1 << "th operation:" << endl;
+        PrintMap();
+        cout << endl;
+    }
+
+    return cost;
+}
+
+///////////////  Ending: Hardware with bridge  /////////////////////
+
+
+////////  Beginning: Hardware with bridge and fixed qubits  ////////
+
+class HardwareC:public HardwareB
+{
+protected:
+    vector<int> fixedQubit;
+
+public:
+    HardwareC(string hwname,bool isUniDirection);
+
+    int Alloc(vector<vector<int>> seq);
+};
+
+HardwareC::HardwareC(string hwname,bool isUniDirection=false):HardwareB(hwname,isUniDirection)
+{
+    fixedQubit.push_back(6);
+    fixedQubit.push_back(8);
+}
+
+
+int HardwareC::Alloc(vector<vector<int>> seq)
 {
     unsigned int i;
     int j,temp,current,next,dest,cost=0;
@@ -484,34 +551,32 @@ int HardwareNew::Alloc(vector<vector<int>> seq)
     return cost;
 }
 
-
-///////////////  Ending of New Hardware Description  ///////////////////////
+//////////  Ending: Hardware with bridge and fixed qubits  ///////////
 
 
 void SeqGenerate(vector<vector<int>> &seq,int qubitNum,int seqLen);
 
 void PrintSeq(vector<vector<int>> seq);
 
-
 int main()
 {
-    int costOld,costNew;
-    Hardware archOld("ibmqx4");
-    HardwareNew archNew("ibmqx4");
+    int costA,costB;
+    HardwareA archA("ibmqx4");
+    HardwareB archB("ibmqx4");
 
     vector<vector<int>> seq;
-    SeqGenerate(seq,archOld.GetQNum(),500);
+    SeqGenerate(seq,archA.GetQNum(),1000);
     PrintSeq(seq);
 
-    archOld.InitMap(seq);
-    costOld=archOld.Alloc(seq);
+    archA.InitMap(seq);
+    costA=archA.Alloc(seq);
 
-    archNew.InitMap(seq);
-    costNew=archNew.Alloc(seq);
+    archB.InitMap(seq);
+    costB=archB.Alloc(seq);
 
-    cout << "The total cost of old hardware is: " << costOld << endl;
-    cout << "The total cost of new hardware is:" << costNew << endl;
-    cout << "new cost/old cost = " << (double)costNew/costOld << endl;
+    cout << "The total cost of HardwareA is: " << costA << endl;
+    cout << "The total cost of HardwareB is: " << costB << endl;
+    cout << "costB / costA = " << (double)costB/costA << endl;
 
     return 0;
 }
