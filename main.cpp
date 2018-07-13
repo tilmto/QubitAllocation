@@ -578,6 +578,13 @@ int main()
     cout << "The total cost of HardwareB is: " << costB << endl;
     cout << "costB / costA = " << (double)costB/costA << endl;
 
+    /*
+    HardwareC archC("ibmqx4");
+    archC.InitMap(seq);
+    int costC=archC.Alloc(seq);
+    cout << "The total cost of HardwareC is: " << costC << endl;
+    */
+
     return 0;
 }
 
