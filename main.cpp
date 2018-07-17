@@ -336,9 +336,11 @@ int HardwareA::Alloc(vector<vector<int>> seq)
 
         cost++;
 
+        /*
         cout << "After the " << i+1 << "th operation:" << endl;
         PrintMap();
         cout << endl;
+        */
     }
 
     return cost;
@@ -354,13 +356,13 @@ class HardwareB:public HardwareA
 public:
     HardwareB(string hwname,bool isUniDirection);
 
-    void InitMap(vector<vector<int>> seq);
+ //   void InitMap(vector<vector<int>> seq);
 
     int Alloc(vector<vector<int>> seq);
 };
 
 HardwareB::HardwareB(string hwname,bool isUniDirection=false):HardwareA(hwname,isUniDirection){}
-
+/*
 void HardwareB::InitMap(vector<vector<int>> seq)
 {
     int i;
@@ -413,7 +415,7 @@ void HardwareB::InitMap(vector<vector<int>> seq)
     cout << "Initial Mapping:" << endl;
     PrintMap();
 }
-
+*/
 
 int HardwareB::Alloc(vector<vector<int>> seq)
 {
@@ -457,9 +459,11 @@ int HardwareB::Alloc(vector<vector<int>> seq)
             cost=cost+4;
         }
 
+        /*
         cout << "After the " << i+1 << "th operation:" << endl;
         PrintMap();
         cout << endl;
+        */
     }
 
     return cost;
@@ -543,9 +547,11 @@ int HardwareC::Alloc(vector<vector<int>> seq)
             cost=cost+4;
         }
 
+        /*
         cout << "After the " << i+1 << "th operation:" << endl;
         PrintMap();
         cout << endl;
+        */
     }
 
     return cost;
@@ -554,7 +560,9 @@ int HardwareC::Alloc(vector<vector<int>> seq)
 //////////  Ending: Hardware with bridge and fixed qubits  ///////////
 
 
-void SeqGenerate(vector<vector<int>> &seq,int qubitNum,int seqLen);
+void RandSeqGen(vector<vector<int>> &seq,int qubitNum,int seqLen);
+
+void GetSeq(vector<vector<int>> &seq,string fname);
 
 void PrintSeq(vector<vector<int>> seq);
 
@@ -565,8 +573,9 @@ int main()
     HardwareB archB("ibmqx4");
 
     vector<vector<int>> seq;
-    SeqGenerate(seq,archA.GetQNum(),1000);
-    PrintSeq(seq);
+    //RandSeqGen(seq,archA.GetQNum(),10000);
+    //PrintSeq(seq);
+    GetSeq(seq,"seq_simon");
 
     archA.InitMap(seq);
     costA=archA.Alloc(seq);
@@ -589,7 +598,7 @@ int main()
 }
 
 
-void SeqGenerate(vector<vector<int>> &seq,int qubitNum,int seqLen)
+void RandSeqGen(vector<vector<int>> &seq,int qubitNum,int seqLen)
 {
     int cqubit,squbit;
     int i=0;
@@ -610,6 +619,23 @@ void SeqGenerate(vector<vector<int>> &seq,int qubitNum,int seqLen)
 }
 
 
+void GetSeq(vector<vector<int>> &seq,string fname)
+{
+    int i=0;
+    ifstream is(fname,ios::in);
+    while(!is.eof())
+    {
+        seq.push_back(vector<int>(2));
+        is >> seq[i][0];
+        is >> seq[i][1];
+        i++;
+    }
+    seq.pop_back();
+
+    is.close();
+}
+
+
 void PrintSeq(vector<vector<int>> seq)
 {
     cout << "Dependency Sequence:"<<endl;
@@ -617,7 +643,6 @@ void PrintSeq(vector<vector<int>> seq)
     for(unsigned int i=0; i<seq.size(); i++)
         cout << "( " << seq[i][0] << " , " << seq[i][1] << " )" <<endl;
 }
-
 
 
 
