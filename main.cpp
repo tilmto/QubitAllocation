@@ -575,7 +575,7 @@ int main()
     vector<vector<int>> seq;
     //RandSeqGen(seq,archA.GetQNum(),10000);
     //PrintSeq(seq);
-    GetSeq(seq,"seq_simon");
+    GetSeq(seq,"seq/seq_qft");
 
     archA.InitMap(seq);
     costA=archA.Alloc(seq);
