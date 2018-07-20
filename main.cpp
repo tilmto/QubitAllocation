@@ -356,66 +356,10 @@ class HardwareB:public HardwareA
 public:
     HardwareB(string hwname,bool isUniDirection);
 
- //   void InitMap(vector<vector<int>> seq);
-
     int Alloc(vector<vector<int>> seq);
 };
 
 HardwareB::HardwareB(string hwname,bool isUniDirection=false):HardwareA(hwname,isUniDirection){}
-/*
-void HardwareB::InitMap(vector<vector<int>> seq)
-{
-    int i;
-    unsigned int j;
-    vector<int> freq(qubitNum,0);
-    vector<int> sortFreq(1,0);
-    vector<int> sortOutDeg(1,0);
-
-    for(j=0; j<seq.size(); j++)
-    {
-        freq[seq[j][0]]++;
-        freq[seq[j][1]]++;
-    }
-
-    for(i=1; i<qubitNum; i++)
-        for(j=0; j<sortFreq.size(); j++)
-        {
-            if(freq[i]>freq[sortFreq[j]])
-            {
-                sortFreq.insert(sortFreq.begin()+j,i);
-                break;
-            }
-
-            if(j==sortFreq.size()-1)
-            {
-                sortFreq.push_back(i);
-                break;
-            }
-        }
-
-    for(i=1; i<qubitNum; i++)
-        for(j=0; j<sortOutDeg.size(); j++)
-        {
-            if(outdeg[i]>outdeg[sortOutDeg[j]])
-            {
-                sortOutDeg.insert(sortOutDeg.begin()+j,i);
-                break;
-            }
-
-            if(j==sortOutDeg.size()-1)
-            {
-                sortOutDeg.push_back(i);
-                break;
-            }
-        }
-
-    for(i=0; i<qubitNum; i++)
-        mapArray[sortOutDeg[i]]=sortFreq[i];
-
-    cout << "Initial Mapping:" << endl;
-    PrintMap();
-}
-*/
 
 int HardwareB::Alloc(vector<vector<int>> seq)
 {
