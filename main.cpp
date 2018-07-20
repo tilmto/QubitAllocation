@@ -36,8 +36,6 @@ public:
 
     int GetENum();
 
-    void VerifyArchMatrix();
-
     void PrintArchMatrix();
 
     void Floyd();
@@ -57,7 +55,7 @@ public:
 };
 
 
-HardwareA::HardwareA(string hwname,bool isUniDirection=false)
+HardwareA::HardwareA(string hwname,bool isUniDirection=true)
 {
     int adjIndex,i;
 
@@ -116,26 +114,12 @@ HardwareA::HardwareA(string hwname,bool isUniDirection=false)
 
     edgeNum=edgeNum/2;
 
-    VerifyArchMatrix();
-
     PrintArchMatrix();
 
     Floyd();
 
     cout << "Physical qubits number: " << qubitNum << endl;
     cout << "Edge number: " << edgeNum << endl;
-}
-
-
-void HardwareA::VerifyArchMatrix()
-{
-    for(int i=0; i<qubitNum; i++)
-        for(int j=i; j<qubitNum; j++)
-            if(archMatrix[i][j]!=archMatrix[j][i])
-            {
-                cout << "Wrong Hardware Architecture." << endl;
-                exit(1);
-            }
 }
 
 
@@ -158,7 +142,7 @@ void HardwareA::Floyd()
     for(i=0; i<qubitNum; i++)
         for(j=0; j<qubitNum; j++)
         {
-            if(!archMatrix[i][j])
+            if(!archMatrix[i][j] && !archMatrix[j][i])
             {
                 distMatrix[i][j]=infinity;
                 routeMatrix[i][j]=-1;
@@ -334,7 +318,10 @@ int HardwareA::Alloc(vector<vector<int>> seq)
             next=routeMatrix[current][dest];
         }
 
-        cost++;
+        if(archMatrix[current][next])
+            cost++;
+        else
+            cost=cost+5;
 
         /*
         cout << "After the " << i+1 << "th operation:" << endl;
@@ -359,7 +346,7 @@ public:
     int Alloc(vector<vector<int>> seq);
 };
 
-HardwareB::HardwareB(string hwname,bool isUniDirection=false):HardwareA(hwname,isUniDirection){}
+HardwareB::HardwareB(string hwname,bool isUniDirection=true):HardwareA(hwname,isUniDirection){}
 
 int HardwareB::Alloc(vector<vector<int>> seq)
 {
@@ -377,17 +364,25 @@ int HardwareB::Alloc(vector<vector<int>> seq)
                 dest=j;
         }
 
+        /*
         if(outdeg[current]>outdeg[dest])
         {
             temp=current;
             current=dest;
             dest=temp;
         }
+        */
 
         next=routeMatrix[current][dest];
 
         if(next==dest)
-            cost++;
+        {
+            if(archMatrix[current][next])
+                cost++;
+            else
+                cost=cost+5;
+        }
+
         else
         {
             while(routeMatrix[next][dest]!=dest)
@@ -400,7 +395,17 @@ int HardwareB::Alloc(vector<vector<int>> seq)
                 next=routeMatrix[current][dest];
             }
 
-            cost=cost+4;
+            if(archMatrix[current][next] && archMatrix[next][dest])
+                cost=cost+4;
+            else if((!archMatrix[current][next] && !archMatrix[next][dest]) || (archMatrix[current][next] && !archMatrix[next][dest]))
+                cost=cost+10;
+            else
+            {
+                temp=mapArray[current];
+                mapArray[current]=mapArray[next];
+                mapArray[next]=temp;
+                cost=cost+8;
+            }
         }
 
         /*
@@ -415,7 +420,7 @@ int HardwareB::Alloc(vector<vector<int>> seq)
 
 ///////////////  Ending: Hardware with bridge  /////////////////////
 
-
+/*
 ////////  Beginning: Hardware with bridge and fixed qubits  ////////
 
 class HardwareC:public HardwareB
@@ -429,7 +434,7 @@ public:
     int Alloc(vector<vector<int>> seq);
 };
 
-HardwareC::HardwareC(string hwname,bool isUniDirection=false):HardwareB(hwname,isUniDirection)
+HardwareC::HardwareC(string hwname,bool isUniDirection=true):HardwareB(hwname,isUniDirection)
 {
     fixedQubit.push_back(6);
     fixedQubit.push_back(8);
@@ -491,18 +496,16 @@ int HardwareC::Alloc(vector<vector<int>> seq)
             cost=cost+4;
         }
 
-        /*
         cout << "After the " << i+1 << "th operation:" << endl;
         PrintMap();
         cout << endl;
-        */
     }
 
     return cost;
 }
 
 //////////  Ending: Hardware with bridge and fixed qubits  ///////////
-
+*/
 
 void RandSeqGen(vector<vector<int>> &seq,int qubitNum,int seqLen);
 
@@ -513,13 +516,13 @@ void PrintSeq(vector<vector<int>> seq);
 int main()
 {
     int costA,costB;
-    HardwareA archA("ibmqx4");
-    HardwareB archB("ibmqx4");
+    HardwareA archA("ibmqx5");
+    HardwareB archB("ibmqx5");
 
     vector<vector<int>> seq;
-    //RandSeqGen(seq,archA.GetQNum(),10000);
+    RandSeqGen(seq,archA.GetQNum(),100);
     //PrintSeq(seq);
-    GetSeq(seq,"seq/seq_qft");
+    //GetSeq(seq,"seq/seq_simon");
 
     archA.InitMap(seq);
     costA=archA.Alloc(seq);
