@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <ctime>
+#include <sys/types.h>
+#include <dirent.h>
 #define infinity 1e4
 
 using namespace std;
@@ -271,8 +273,10 @@ void HardwareA::InitMap(vector<vector<int>> seq)
     for(i=0; i<qubitNum; i++)
         mapArray[sortOutDeg[i]]=sortFreq[i];
 
+    /*
     cout << "Initial Mapping:" << endl;
     PrintMap();
+    */
 }
 
 
@@ -513,33 +517,40 @@ void GetSeq(vector<vector<int>> &seq,string fname);
 
 void PrintSeq(vector<vector<int>> seq);
 
+int GetSeqList(vector<string> &fileList, string directory);
+
 int main()
 {
-    int costA,costB;
+    int costA,costB,fcount;
     HardwareA archA("ibmqx5");
     HardwareB archB("ibmqx5");
 
+    vector<string> fileList;
     vector<vector<int>> seq;
-    RandSeqGen(seq,archA.GetQNum(),100);
-    //PrintSeq(seq);
-    //GetSeq(seq,"seq/seq_simon");
 
-    archA.InitMap(seq);
-    costA=archA.Alloc(seq);
+    string directory="/home/tilmto/CodeBlocks/QubitAllocationNew/seq";
+    fcount=GetSeqList(fileList,directory);
 
-    archB.InitMap(seq);
-    costB=archB.Alloc(seq);
+    ofstream os("result",ios::out);
 
-    cout << "The total cost of HardwareA is: " << costA << endl;
-    cout << "The total cost of HardwareB is: " << costB << endl;
-    cout << "costB / costA = " << (double)costB/costA << endl;
+    for(int i=0;i<fcount;i++)
+    {
+        GetSeq(seq,"seq/"+fileList[i]);
 
-    /*
-    HardwareC archC("ibmqx4");
-    archC.InitMap(seq);
-    int costC=archC.Alloc(seq);
-    cout << "The total cost of HardwareC is: " << costC << endl;
-    */
+        archA.InitMap(seq);
+        costA=archA.Alloc(seq);
+
+        archB.InitMap(seq);
+        costB=archB.Alloc(seq);
+
+        os << fileList[i] << ":" << endl;
+        os << "The total cost of HardwareA is: " << costA << endl;
+        os << "The total cost of HardwareB is: " << costB << endl;
+        os << "costB / costA = " << (double)costB/costA << endl;
+        os << endl;
+    }
+
+    os.close();
 
     return 0;
 }
@@ -592,6 +603,37 @@ void PrintSeq(vector<vector<int>> seq)
 }
 
 
+int GetSeqList(vector<string> &fileList, string directory)
+{
+    directory = directory.append("/");
+
+    DIR *p_dir;
+    const char* str = directory.c_str();
+
+    p_dir = opendir(str);
+    if( p_dir == NULL)
+    {
+        cout<< "can't open :" << directory << endl;
+    }
+
+    struct dirent *p_dirent;
+
+    while ( p_dirent = readdir(p_dir))
+    {
+        string tmpFileName = p_dirent->d_name;
+        if( tmpFileName == "." || tmpFileName == "..")
+        {
+            continue;
+        }
+        else
+        {
+            fileList.push_back(tmpFileName);
+        }
+    }
+    closedir(p_dir);
+
+    return fileList.size();
+}
 
 
 
