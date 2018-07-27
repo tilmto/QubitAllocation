@@ -38,6 +38,8 @@ public:
 
     int GetENum();
 
+    void GetArch(string hwname);
+
     void PrintArchMatrix();
 
     void Floyd();
@@ -59,9 +61,22 @@ public:
 
 HardwareA::HardwareA(string hwname,bool isUniDirection=true)
 {
-    int adjIndex,i;
-
     this->isUniDirection=isUniDirection;
+
+    GetArch(hwname);
+
+    PrintArchMatrix();
+
+    Floyd();
+
+    cout << "Physical qubits number: " << qubitNum << endl;
+    cout << "Edge number: " << edgeNum << endl;
+}
+
+
+void HardwareA::GetArch(string hwname)
+{
+    int adjIndex,i;
 
     ifstream is(hwname,ios::in);
     if(!is)
@@ -113,13 +128,6 @@ HardwareA::HardwareA(string hwname,bool isUniDirection=true)
     }
 
     is.close();
-
-    PrintArchMatrix();
-
-    Floyd();
-
-    cout << "Physical qubits number: " << qubitNum << endl;
-    cout << "Edge number: " << edgeNum << endl;
 }
 
 
@@ -511,6 +519,7 @@ int GetSeqList(vector<string> &fileList, string directory);
 int main()
 {
     int costA,costB,fcount;
+
     HardwareA archA("ibmqx5");
     HardwareB archB("ibmqx5");
 
@@ -529,8 +538,8 @@ int main()
     cout << "The total cost of HardwareA is: " << costA << endl;
     cout << "The total cost of HardwareB is: " << costB << endl;
     cout << "costB / costA = " << (double)costB/costA << endl;
+*/
 
- */
     string directory="/home/tilmto/CodeBlocks/QubitAllocationNew/seq";
     fcount=GetSeqList(fileList,directory);
 
