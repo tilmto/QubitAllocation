@@ -6,6 +6,7 @@
 #include <ctime>
 #include <sys/types.h>
 #include <dirent.h>
+#include <time.h>
 #define infinity 1e4
 
 using namespace std;
@@ -519,6 +520,7 @@ int GetSeqList(vector<string> &fileList, string directory);
 int main()
 {
     int costA,costB,fcount;
+    clock_t starttime,endtime;
 
     HardwareA archA("ibmqx5");
     HardwareB archB("ibmqx5");
@@ -532,11 +534,17 @@ int main()
     costA=archA.Alloc(seq);
 
     archB.InitMap(seq);
+
+    starttime=clock();
+
     costB=archB.Alloc(seq);
 
+    endtime=clock();
+
     cout << "Length of the sequence:" << seq.size() << endl;
-    cout << "The total cost of HardwareA is: " << costA << endl;
-    cout << "The total cost of HardwareB is: " << costB << endl;
+    cout << "Total Cost of HardwareA is: " << costA << endl;
+    cout << "Total Cost of HardwareB is: " << costB << endl;
+    cout << "Execution Time of B is:" << (double)(endtime-starttime)/CLOCKS_PER_SEC << endl;
     cout << "costB / costA = " << (double)costB/costA << endl;
 */
 
@@ -553,12 +561,18 @@ int main()
         costA=archA.Alloc(seq);
 
         archB.InitMap(seq);
+
+        starttime=clock();
+
         costB=archB.Alloc(seq);
+
+        endtime=clock();
 
         os << fileList[i] << ":" << endl;
         os << "Length of the sequence:" << seq.size() << endl;
-        os << "The total cost of HardwareA is: " << costA << endl;
-        os << "The total cost of HardwareB is: " << costB << endl;
+        os << "Total Cost of HardwareA is: " << costA << endl;
+        os << "Total Cost of HardwareB is: " << costB << endl;
+        os << "Execution Time of B is: " << (double)(endtime-starttime)/CLOCKS_PER_SEC << endl;
         os << "costB / costA = " << (double)costB/costA << endl;
         os << endl;
     }
