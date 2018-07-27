@@ -114,8 +114,6 @@ HardwareA::HardwareA(string hwname,bool isUniDirection=true)
 
     is.close();
 
-    edgeNum=edgeNum/2;
-
     PrintArchMatrix();
 
     Floyd();
@@ -361,21 +359,12 @@ int HardwareB::Alloc(vector<vector<int>> seq)
     {
         for(j=0; j<qubitNum; j++)
         {
-            if(mapArray[j]==seq[i][1])
+            if(mapArray[j]==seq[i][0])
                 current=j;
 
-            if(mapArray[j]==seq[i][0])
+            if(mapArray[j]==seq[i][1])
                 dest=j;
         }
-
-        /*
-        if(outdeg[current]>outdeg[dest])
-        {
-            temp=current;
-            current=dest;
-            dest=temp;
-        }
-        */
 
         next=routeMatrix[current][dest];
 
@@ -527,11 +516,25 @@ int main()
 
     vector<string> fileList;
     vector<vector<int>> seq;
+/*
+    //RandSeqGen(seq,archA.GetQNum(),1000);
+    GetSeq(seq,"seq/seq_3_17_13.qasm");
+    archA.InitMap(seq);
+    costA=archA.Alloc(seq);
 
+    archB.InitMap(seq);
+    costB=archB.Alloc(seq);
+
+    cout << "Length of the sequence:" << seq.size() << endl;
+    cout << "The total cost of HardwareA is: " << costA << endl;
+    cout << "The total cost of HardwareB is: " << costB << endl;
+    cout << "costB / costA = " << (double)costB/costA << endl;
+
+ */
     string directory="/home/tilmto/CodeBlocks/QubitAllocationNew/seq";
     fcount=GetSeqList(fileList,directory);
 
-    ofstream os("result",ios::out);
+    ofstream os("/home/tilmto/Ericpy/QuantumComputing/bridge/result",ios::out);
 
     for(int i=0;i<fcount;i++)
     {
@@ -544,6 +547,7 @@ int main()
         costB=archB.Alloc(seq);
 
         os << fileList[i] << ":" << endl;
+        os << "Length of the sequence:" << seq.size() << endl;
         os << "The total cost of HardwareA is: " << costA << endl;
         os << "The total cost of HardwareB is: " << costB << endl;
         os << "costB / costA = " << (double)costB/costA << endl;
@@ -581,6 +585,9 @@ void GetSeq(vector<vector<int>> &seq,string fname)
 {
     int i=0;
     ifstream is(fname,ios::in);
+
+    seq.clear();
+
     while(!is.eof())
     {
         seq.push_back(vector<int>(2));

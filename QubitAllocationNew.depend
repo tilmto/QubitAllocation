@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1532386698 source:/home/tilmto/CodeBlocks/QubitAllocationNew/main.cpp
+1532652526 source:/home/tilmto/CodeBlocks/QubitAllocationNew/main.cpp
 	<cstdlib>
 	<iostream>
 	<fstream>
