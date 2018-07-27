@@ -511,7 +511,7 @@ int HardwareC::Alloc(vector<vector<int>> seq)
 
 void RandSeqGen(vector<vector<int>> &seq,int qubitNum,int seqLen);
 
-void GetSeq(vector<vector<int>> &seq,string fname);
+int GetSeq(vector<vector<int>> &seq,string fname);
 
 void PrintSeq(vector<vector<int>> seq);
 
@@ -519,7 +519,7 @@ int GetSeqList(vector<string> &fileList, string directory);
 
 int main()
 {
-    int costA,costB,fcount;
+    int costA,costB,scount,fcount;
     clock_t starttime,endtime;
 
     HardwareA archA("ibmqx5");
@@ -555,21 +555,21 @@ int main()
 
     for(int i=0;i<fcount;i++)
     {
-        GetSeq(seq,"seq/"+fileList[i]);
+        scount=GetSeq(seq,"seq/"+fileList[i]);
 
         archA.InitMap(seq);
-        costA=archA.Alloc(seq);
+        costA=archA.Alloc(seq)+scount;
 
         archB.InitMap(seq);
 
         starttime=clock();
 
-        costB=archB.Alloc(seq);
+        costB=archB.Alloc(seq)+scount;
 
         endtime=clock();
 
         os << fileList[i] << ":" << endl;
-        os << "Length of the sequence:" << seq.size() << endl;
+        os << "Length of the sequence:" << seq.size()+scount << endl;
         os << "Total Cost of HardwareA is: " << costA << endl;
         os << "Total Cost of HardwareB is: " << costB << endl;
         os << "Execution Time of B is: " << (double)(endtime-starttime)/CLOCKS_PER_SEC << endl;
@@ -604,29 +604,42 @@ void RandSeqGen(vector<vector<int>> &seq,int qubitNum,int seqLen)
 }
 
 
-void GetSeq(vector<vector<int>> &seq,string fname)
+int GetSeq(vector<vector<int>> &seq,string fname)
 {
     int i=0;
-    ifstream is(fname,ios::in);
+    int scount=0;
+    int first,second;
 
     seq.clear();
 
+    ifstream is(fname,ios::in);
+
     while(!is.eof())
     {
-        seq.push_back(vector<int>(2));
-        is >> seq[i][0];
-        is >> seq[i][1];
-        i++;
+        is >> first;
+        is >> second;
+        if(first==-1)
+            scount++;
+        else
+        {
+            seq.push_back(vector<int>(2));
+            seq[i][0]=first;
+            seq[i][1]=second;
+            i++;
+        }
     }
+
     seq.pop_back();
 
     is.close();
+
+    return scount;
 }
 
 
 void PrintSeq(vector<vector<int>> seq)
 {
-    cout << "Dependency Sequence:"<<endl;
+    cout << "Dependency Sequence:"<< endl;
 
     for(unsigned int i=0; i<seq.size(); i++)
         cout << "( " << seq[i][0] << " , " << seq[i][1] << " )" <<endl;
